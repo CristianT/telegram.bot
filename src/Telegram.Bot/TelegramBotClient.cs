@@ -187,6 +187,11 @@ namespace Telegram.Bot
         /// <summary>
         /// Occurs when an error occures during the background update pooling.
         /// </summary>
+        public event EventHandler<ReceiveGeneralErrorEventArgs> OnReceiveGeneralError;
+
+        /// <summary>
+        /// Occurs when an error occures during the background update pooling.
+        /// </summary>
         [Obsolete("Use OnReceiveError")]
         public event EventHandler<ReceiveErrorEventArgs> ReceiveError
         {
@@ -280,10 +285,14 @@ namespace Telegram.Bot
                         MessageOffset = update.Id + 1;
                     }
                 }
-                catch (OperationCanceledException) {}
-                catch (ApiRequestException e)
+                catch (OperationCanceledException) { }
+                catch (ApiRequestException apiException)
                 {
-                    OnReceiveError?.Invoke(this, e);
+                    OnReceiveError?.Invoke(this, apiException);
+                }
+                catch (Exception generalException)
+                {
+                    OnReceiveGeneralError?.Invoke(this, generalException);
                 }
             }
 
@@ -1844,11 +1853,25 @@ namespace Telegram.Bot
             return SendWebRequestAsync<Message>(typeInfo.Key, additionalParameters, cancellationToken);
         }
 
+        private static object logWrittingLock = new object();
+
         private async Task<T> SendWebRequestAsync<T>(string method, Dictionary<string, object> parameters = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
+            lock (logWrittingLock)
+            {
+                using (var writer = new StreamWriter("telegramBot.log"))
+                {
+                    foreach (var param in parameters)
+                    {
+                        writer.WriteLine("Parameter: " + param.Key);
+                        writer.WriteLine("Value: " + param.Value.ToString());
+                    }
+                }
+            }
+
             if (_invalidToken)
-                throw new ApiRequestException("Invalid token", 401);
+                    throw new ApiRequestException("Invalid token", 401);
 
             var uri = new Uri(BaseUrl + _token + "/" + method);
 
@@ -1870,6 +1893,14 @@ namespace Telegram.Bot
                         {
                             foreach (var parameter in parameters.Where(parameter => parameter.Value != null))
                             {
+                                lock (logWrittingLock)
+                                {
+                                    using (var writer = new StreamWriter("telegramBot.log"))
+                                    {
+                                        writer.WriteLine("Setting param: " + parameter.Key);
+                                    }
+                                }
+
                                 var content = ConvertParameterValue(parameter.Value);
 
                                 if (parameter.Key == "timeout" && (int)parameter.Value != 0)
@@ -1929,6 +1960,14 @@ namespace Telegram.Bot
 #if !NETSTANDARD1_1
                 catch (UnsupportedMediaTypeException e)
                 {
+                    lock (logWrittingLock)
+                    {
+                        using (var writer = new StreamWriter("telegramBot.log"))
+                        {
+                            writer.WriteLine("Error");
+                        }
+                    }
+
                     throw new ApiRequestException("Invalid response received", 501, e);
                 }
 #endif
