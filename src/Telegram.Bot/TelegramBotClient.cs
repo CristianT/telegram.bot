@@ -1853,10 +1853,24 @@ namespace Telegram.Bot
             {
                 using (var writer = new StreamWriter("telegramBot.log"))
                 {
-                    foreach (var param in parameters)
+                    if (parameters == null)
                     {
-                        writer.WriteLine("Parameter: " + param.Key);
-                        writer.WriteLine("Value: " + param.Value.ToString());
+                        writer.WriteLine("Null Parameters");
+                    }
+                    else
+                    {
+                        foreach (var param in parameters)
+                        {
+                            writer.WriteLine("Parameter: " + param.Key);
+                            if (param.Value != null)
+                            {
+                                writer.WriteLine("Value: " + param.Value.ToString());
+                            }
+                            else
+                            {
+                                writer.WriteLine("Value: null");
+                            }
+                        }
                     }
                 }
             }
@@ -1955,7 +1969,7 @@ namespace Telegram.Bot
                     {
                         using (var writer = new StreamWriter("telegramBot.log"))
                         {
-                            writer.WriteLine("Error");
+                            writer.WriteLine("Error in parameter.");
                         }
                     }
 
