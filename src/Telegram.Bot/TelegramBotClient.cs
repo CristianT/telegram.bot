@@ -1851,8 +1851,10 @@ namespace Telegram.Bot
         {
             lock (logWrittingLock)
             {
-                using (var writer = new StreamWriter("telegramBot.log"))
+                using (var writer = System.IO.File.AppendText("telegramBot.log"))
                 {
+                    writer.WriteLine("method:" + method);
+
                     if (parameters == null)
                     {
                         writer.WriteLine("Null Parameters");
@@ -1900,7 +1902,7 @@ namespace Telegram.Bot
                             {
                                 lock (logWrittingLock)
                                 {
-                                    using (var writer = new StreamWriter("telegramBot.log"))
+                                    using (var writer = System.IO.File.AppendText("telegramBot.log"))
                                     {
                                         writer.WriteLine("Setting param: " + parameter.Key);
                                     }
@@ -1967,7 +1969,7 @@ namespace Telegram.Bot
                 {
                     lock (logWrittingLock)
                     {
-                        using (var writer = new StreamWriter("telegramBot.log"))
+                        using (var writer = System.IO.File.AppendText("telegramBot.log"))
                         {
                             writer.WriteLine("Error in parameter.");
                         }
